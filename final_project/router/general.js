@@ -1,5 +1,7 @@
 const express = require('express');
 let books = require("./booksdb.js");
+let isValidUsername = require("./auth_users.js").isValidUsername;
+let isValidPassword = require("./auth_users.js").isValidPassword;
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
@@ -9,6 +11,14 @@ public_users.post("/register", (req, res) => {
 
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required." });
+  }
+
+  if (!isValidUsername(username)) {
+    return res.status(400).json({ message: "Username must be at least 3 characters long." });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({ message: "Password must be at least 6 characters long." });
   }
 
   if (isValid(username)) {
@@ -26,8 +36,9 @@ public_users.get('/',function (req, res) {
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
-  const book = books.find(b => b.isbn === isbn);
+  const i = Number(req.params.isbn);
+  const booksArr = Object.values(books);
+  const book = booksArr.find((b) => b.isbn === i);
 
   if (!book) {
     return res.status(404).json({ message: "Book not found." });
@@ -39,7 +50,8 @@ public_users.get('/isbn/:isbn',function (req, res) {
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
   const author = req.params.author;
-  const booksByAuthor = books.filter(b => b.author.toLowerCase() === author.toLowerCase());
+  const booksArr = Object.values(books);
+  const booksByAuthor = booksArr.filter(b => b.author.toLowerCase() === author.toLowerCase());
 
   if (booksByAuthor.length === 0) {
     return res.status(404).json({ message: "No books found for this author." });
@@ -51,7 +63,8 @@ public_users.get('/author/:author',function (req, res) {
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
   const title = req.params.title;
-  const booksWithTitle = books.filter(b => b.title.toLowerCase().includes(title.toLowerCase()));
+  const booksArr = Object.values(books);
+  const booksWithTitle = booksArr.filter(b => b.title.toLowerCase().includes(title.toLowerCase()));
 
   if (booksWithTitle.length === 0) {
     return res.status(404).json({ message: "No books found with this title." });
@@ -62,14 +75,15 @@ public_users.get('/title/:title',function (req, res) {
 
 // Get book review
 public_users.get('/review/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
-  const book = books.find(b => b.isbn === isbn);
+  const isbn = Number(req.params.isbn);
+  const booksArr = Object.values(books);
+  const book = booksArr.find(b => b.isbn === isbn);
 
   if (!book) {
     return res.status(404).json({ message: "Book not found." });
   }
 
-  const review = book.reviews.find(r => r.username === req.query.username);
+  const review = Object.values(book.reviews).find(r => r.username === req.query.username);
 
   if (!review) {
     return res.status(404).json({ message: "Review not found." });
