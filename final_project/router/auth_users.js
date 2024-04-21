@@ -92,7 +92,38 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 });
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-  
+  const isbn = Number(req.params.isbn);
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required." });
+  }
+
+  const user = findUser(username);
+
+  if (!user) {
+    return res.status(401).json({ message: "Invalid user." });
+  }
+
+  const book = findBookByISBN(isbn);
+
+  if (!book) {
+    return res.status(404).json({ message: "Book not found." });
+  }
+
+  const reviewIndex = book.reviews.hasOwnProperty(username);
+
+  if (!reviewIndex) {
+    return res.status(404).json({ message: "Review not found." });
+  }
+
+  // Filter out the review for the current user
+  book.reviews = Object.entries(book.reviews).filter(([key, value]) => key !== username).reduce((obj, [key, value]) => {
+    obj[key] = value;
+    return obj;
+  }, {});
+
+  res.status(200).json({ message: "Review deleted.", book });
 });
 
 module.exports.authenticated = regd_users;
